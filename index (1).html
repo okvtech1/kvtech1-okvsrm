@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>School Result and Accounting Management System | OKV Technology Consults</title>
+<meta name="description" content="Results, school fees and receipts for KG, nursery, primary and secondary schools. Download the setup for Windows or Mac.">
+<style>
+  :root { --navy:#16213e; --gold:#b58a2c; --gold2:#e2b44f; --bg:#eef0f4; --ink:#101828; --muted:#475467; --card:#ffffff; --line:#d9dee8; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg:#0f1526; --ink:#e8ecf5; --muted:#a9b3c7; --card:#18213a; --line:#2b3757; --navy:#e8ecf5; }
+  }
+  :root[data-theme="dark"] { --bg:#0f1526; --ink:#e8ecf5; --muted:#a9b3c7; --card:#18213a; --line:#2b3757; --navy:#e8ecf5; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  .wrap { max-width:1040px; margin:0 auto; padding:0 16px; }
+  header.top { background:var(--navy); color:#fff; }
+  header.top .wrap { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:14px 16px; }
+  header.top b { font-size:17px; }
+  nav a { color:#fff; text-decoration:none; margin-left:16px; font-size:14px; opacity:.92; }
+  nav a:hover { text-decoration:underline; }
+  .hero { padding:48px 0 28px; }
+  .hero h1 { font-size:34px; line-height:1.15; margin:0 0 12px; color:var(--navy); }
+  .hero p { font-size:18px; color:var(--muted); margin:0 0 22px; max-width:720px; }
+  .btn { display:inline-block; padding:12px 20px; border-radius:999px; font-weight:700; text-decoration:none; border:2px solid var(--navy); color:var(--navy); margin:4px 8px 4px 0; }
+  .btn.primary { background:var(--navy); color:#fff; }
+  .btn.gold { background:var(--gold2); border-color:var(--gold2); color:var(--navy); }
+  .btn[aria-disabled="true"] { opacity:.5; pointer-events:none; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; margin:12px 0 8px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px; }
+  .card h2 { font-size:19px; margin:0 0 6px; color:var(--navy); }
+  .card p { margin:0 0 12px; color:var(--muted); font-size:15px; }
+  section { padding:18px 0; }
+  section h2.sec { font-size:24px; color:var(--navy); margin:18px 0 10px; }
+  ul.check { padding:0; list-style:none; margin:0; }
+  ul.check li { padding:6px 0 6px 26px; position:relative; color:var(--ink); }
+  ul.check li:before { content:"\2713"; position:absolute; left:0; color:var(--gold); font-weight:800; }
+  .note { font-size:14px; color:var(--muted); }
+  .demo { border:1px solid var(--line); border-radius:14px; background:var(--card); padding:22px; display:flex; flex-wrap:wrap; gap:14px; align-items:center; justify-content:space-between; }
+  footer { border-top:1px solid var(--line); margin-top:30px; padding:22px 0 34px; color:var(--muted); font-size:14px; }
+  footer a { color:var(--navy); }
+  @media (max-width:600px) { .hero h1 { font-size:27px; } nav a { margin-left:10px; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <b>School Result and Accounting Management System</b>
+    <nav>
+      <a href="#download">Download</a>
+      <a href="demo/">Live demo</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="hero">
+    <h1>Results, school fees and receipts for your whole school, in one system.</h1>
+    <p>Report sheets for KG, nursery, primary and secondary classes. Score entry, attendance and remarks, invoices, receipts, expenses, debtors and cash book. Works on a school computer, and pupils, teachers and parents can use phones and tablets on the same Wi-Fi.</p>
+    <a class="btn primary" href="demo/">Try the live demo</a>
+    <a class="btn" href="#download">Download the setup</a>
+  </div>
+
+  <section id="download">
+    <h2 class="sec">Download the setup</h2>
+    <div class="grid">
+      <div class="card">
+        <h2>Windows</h2>
+        <p>Windows 7 with Service Pack 1 or newer, including Windows 8, 10 and 11. 32-bit or 64-bit. Nothing else to install: the setup includes everything the system needs.</p>
+        <a class="btn primary" id="dl-win" href="#">Download for Windows</a>
+      </div>
+      <div class="card">
+        <h2>Mac with Apple silicon</h2>
+        <p>For Macs with an M1, M2, M3 or newer chip.</p>
+        <a class="btn primary" id="dl-mac-arm" href="#">Download for Apple silicon</a>
+      </div>
+      <div class="card">
+        <h2>Mac with Intel</h2>
+        <p>For Intel-based Macs.</p>
+        <a class="btn primary" id="dl-mac-intel" href="#">Download for Intel Mac</a>
+      </div>
+    </div>
+    <p class="note">Windows may say the publisher is unknown. Click <b>More info</b>, then <b>Run anyway</b>. On a Mac, open the downloaded file, drag the program to Applications, then open it. If macOS blocks it the first time, right-click the program and choose <b>Open</b>.</p>
+    <p class="note">After installing, open the program. It runs in your browser at the address it shows. The first sign-in uses the administrator account created at setup, and you are asked to change its password.</p>
+  </section>
+
+  <section>
+    <h2 class="sec">Why schools choose it</h2>
+    <div class="grid">
+      <div class="card">
+        <h2>Built for Nigerian schools</h2>
+        <ul class="check">
+          <li>KG to SS3 classes</li>
+          <li>One, two or three C.A tests</li>
+          <li>A to F, or WAEC A1 to F9 grading</li>
+          <li>Automatic or typed remarks, with signatures</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h2>Money matters too</h2>
+        <ul class="check">
+          <li>Custom fees and fee types per class</li>
+          <li>Invoices, receipts and balances per pupil</li>
+          <li>Expenses, debtors, cash book and reports</li>
+          <li>Backup and export to Excel, CSV and more</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h2>Works offline on your network</h2>
+        <ul class="check">
+          <li>No internet needed to use the system</li>
+          <li>Phones and tablets connect through a browser</li>
+          <li>Four login roles: administrator, teacher, accountant and pupil</li>
+          <li>Your data stays on your own computer</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="demo" aria-labelledby="demo-title">
+    <div>
+      <h2 id="demo-title" style="margin:0 0 4px;color:var(--navy);font-size:21px">See the whole system before you buy</h2>
+      <p class="note" style="margin:0">The live demo is the real system with sample results, fees and receipts. Open it in any browser.</p>
+    </div>
+    <a class="btn gold" href="demo/">Open the live demo</a>
+  </section>
+
+  <section id="pricing">
+    <h2 class="sec">Pricing and activation</h2>
+    <div class="card">
+      <p>One payment for the software. Your school gets an activation code by email after payment.</p>
+      <a class="btn primary" id="buy" href="#" aria-disabled="true">See pricing and buy</a>
+      <a class="btn" id="activate" href="#" aria-disabled="true">Request an activation code</a>
+      <p class="note" id="pricing-note">Pricing and activation are handled by OKV Technology Consults.</p>
+    </div>
+  </section>
+
+  <section id="contact">
+    <h2 class="sec">Contact OKV Technology Consults</h2>
+    <div class="grid">
+      <div class="card"><h2>Phone</h2><p><a href="tel:+2349152103969">+234 915 210 3969</a></p></div>
+      <div class="card"><h2>WhatsApp</h2><p><a href="https://wa.me/2348104141138">+234 810 414 1138</a></p></div>
+      <div class="card"><h2>Email</h2><p><a href="mailto:technologyokv@gmail.com">technologyokv@gmail.com</a></p></div>
+    </div>
+    <p class="note">Installation and staff training are available on request, on site or remotely.</p>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    &copy; OKV Technology Consults. <a href="#">Top</a>
+  </div>
+</footer>
+
+<script>
+  /* ============ SET THIS VALUE ONCE ============
+     GITHUB_REPO: the GitHub repository that holds the installer Release, written as owner/name.
+                  Example: 'okvtechnology/school-system'. The repository must be PUBLIC for the downloads to work.
+     The Apps Script web app address is pasted once on the first app/ page you open. */
+  const GITHUB_REPO = 'YOUR-GITHUB-USERNAME/YOUR-REPO';
+  // The Apps Script web app address is pasted once in app/pricing.html (or any app/ page) and kept in the browser.
+
+  const base = 'https://github.com/' + GITHUB_REPO + '/releases/latest/download/';
+  const ready = GITHUB_REPO.indexOf('YOUR-') !== 0;
+  const files = {
+    'dl-win': 'SchoolSystemSetup.exe',
+    'dl-mac-arm': 'SchoolSystem-arm64.dmg',
+    'dl-mac-intel': 'SchoolSystem-x86_64.dmg'
+  };
+  Object.keys(files).forEach(function (id) {
+    const a = document.getElementById(id);
+    if (ready) { a.href = base + files[id]; }
+    else { a.addEventListener('click', function (e) { e.preventDefault(); alert('The site owner has not set GITHUB_REPO yet. Open index.html and set it.'); }); }
+  });
+
+  // Pricing and activation are in the app/ folder. The first visit asks for the Apps Script web app address once.
+  const buy = document.getElementById('buy');
+  const activate = document.getElementById('activate');
+  buy.href = 'app/pricing.html';
+  activate.href = 'app/pricing.html';
+  buy.removeAttribute('aria-disabled');
+  activate.removeAttribute('aria-disabled');
+  document.getElementById('pricing-note').textContent = 'Pay by bank transfer or online, then your activation code is emailed to you.';
+</script>
+</body>
+</html>

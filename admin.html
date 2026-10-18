@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en"><head><script>/* OKV static pages: connects the Apps Script templates to the Code.gs backend.
+   1. google.script.run is replaced by a version that POSTs {rpc:1, fn, args} to the Apps Script web app.
+   2. The web app address is pasted once on the page and kept in this browser (localStorage).
+   3. Links that point at Apps Script pages (?page=pricing and so on) are changed to the matching static file. */
+(function () {
+  var KEY = 'okv_api_url';
+  var FILES = { home: 'index.html', pricing: 'pricing.html', demo: 'demo.html', admin: 'admin.html', paid: 'paid.html',
+                privacy: 'privacy.html', terms: 'terms.html', cookies: 'cookies.html', refund: 'refund.html', eula: 'eula.html' };
+
+  function getUrl() { try { return localStorage.getItem(KEY) || ''; } catch (e) { return ''; } }
+  function setUrl(u) { try { localStorage.setItem(KEY, u); } catch (e) { } }
+
+  function callRpc(fn, args) {
+    var url = getUrl();
+    if (!url) return Promise.reject(new Error('This page is not connected to the server yet. Paste the web app address at the top of the page.'));
+    return fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ rpc: 1, fn: fn, args: args || [] }) })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (!j || !j.ok) throw new Error((j && j.error) || 'The server did not answer. Check the web app address.');
+        return j.result;
+      });
+  }
+
+  function makeRun(ok, bad) {
+    var base = {
+      withSuccessHandler: function (f) { return makeRun(f, bad); },
+      withFailureHandler: function (f) { return makeRun(ok, f); }
+    };
+    return new Proxy(base, {
+      get: function (t, prop) {
+        if (prop in t) return t[prop];
+        return function () {
+          var args = [].slice.call(arguments);
+          callRpc(String(prop), args).then(function (r) { if (ok) ok(r); },
+                                           function (e) { if (bad) bad(e); else console.error(e); });
+        };
+      }
+    });
+  }
+  window.google = window.google || {};
+  window.google.script = { run: makeRun(null, null) };
+
+  function fixLinks() {
+    var as = document.querySelectorAll('a[href]');
+    for (var i = 0; i < as.length; i++) {
+      var h = as[i].getAttribute('href') || '';
+      var m = /^\?page=([a-z]+)(.*)$/.exec(h);
+      if (m && FILES[m[1]]) as[i].setAttribute('href', FILES[m[1]] + m[2]);
+    }
+  }
+
+  function banner() {
+    var box = document.createElement('div');
+    box.id = 'okv-connect';
+    box.setAttribute('style', 'position:fixed;left:0;right:0;top:0;z-index:99999;background:#16213e;color:#fff;font:14px/1.4 system-ui,sans-serif;padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center');
+    box.innerHTML = '<span style="flex:1 1 320px">Connect this page to the server: paste the Apps Script web app address (it ends in /exec).</span>' +
+      '<input id="okv-url" type="url" placeholder="https://script.google.com/macros/s/.../exec" style="flex:2 1 300px;padding:6px;border-radius:6px;border:0;color:#101828">' +
+      '<button id="okv-save" type="button" style="padding:6px 14px;border-radius:6px;border:0;background:#e2b44f;color:#16213e;font-weight:700;cursor:pointer">Connect</button>' +
+      '<span id="okv-msg" style="flex-basis:100%;color:#f3e3a6"></span>';
+    document.body.appendChild(box);
+    document.getElementById('okv-save').onclick = function () {
+      var v = document.getElementById('okv-url').value.trim();
+      if (!/^https:\/\/script\.google\.com\/macros\/s\/[^\/]+\/exec$/.test(v)) {
+        document.getElementById('okv-msg').textContent = 'That does not look like an Apps Script web app address. It starts with https://script.google.com/macros/s/ and ends in /exec.';
+        return;
+      }
+      setUrl(v);
+      location.reload();
+    };
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    fixLinks();
+    if (!getUrl()) banner();
+  });
+})();
+</script><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base target="_top">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<style>
+:root{--navy:#16213e;--navy2:#1f2c52;--gold:#b58a2c;--gold2:#d3a640;--ink:#1d2433;--mute:#667085;--soft:#f5f6fa}
+html{scroll-behavior:smooth}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:#fff}
+h1,h2,h3,.display-font{font-family:Georgia,"Times New Roman",serif;color:var(--navy);letter-spacing:-.2px}
+.navbar{background:rgba(22,33,62,.97);backdrop-filter:blur(6px)}
+.navbar .nav-link{color:#d7dcea;font-weight:500}.navbar .nav-link:hover,.navbar .nav-link.active{color:#fff}
+.brand-mark{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:8px;background:var(--gold);color:#fff;font:700 15px Georgia;margin-right:10px}
+.btn-gold{background:var(--gold);border-color:var(--gold);color:#fff;font-weight:600}.btn-gold:hover{background:var(--gold2);border-color:var(--gold2);color:#fff}
+.btn-navy{background:var(--navy);border-color:var(--navy);color:#fff}.btn-navy:hover{background:var(--navy2);color:#fff}
+.btn-outline-light:hover{color:var(--navy)}
+.hero{background:radial-gradient(1200px 500px at 85% -10%,#2b3b72 0,transparent 60%),linear-gradient(160deg,#101a33,#16213e 55%,#1d2c57);color:#fff;padding:96px 0 80px;position:relative;overflow:hidden}
+.hero h1{color:#fff;font-size:clamp(2.1rem,4.6vw,3.4rem);line-height:1.1}
+.hero .lead{color:#cfd6ea;max-width:34em}
+.pill{display:inline-block;background:rgba(181,138,44,.18);border:1px solid rgba(211,166,64,.5);color:#f1d594;border-radius:99px;padding:5px 14px;font-size:.85rem;font-weight:600}
+.frame{border-radius:12px;background:#fff;box-shadow:0 30px 70px rgba(0,0,0,.45);overflow:hidden;border:1px solid rgba(255,255,255,.15)}
+.frame .bar{background:#e9ecf3;padding:8px 12px;display:flex;gap:6px;align-items:center}
+.frame .bar i{width:10px;height:10px;border-radius:50%;background:#c4c9d6;display:block}
+.frame img{display:block;width:100%}
+.float-sheet{position:absolute;right:-12px;bottom:-34px;width:42%;border-radius:8px;box-shadow:0 22px 50px rgba(0,0,0,.5);border:1px solid #d5d9e2;background:#fff}
+.trust{background:var(--soft);border-bottom:1px solid #e6e8f0}
+.trust .item{display:flex;gap:12px;align-items:center;padding:18px 8px}
+.trust i{font-size:1.7rem;color:var(--gold)}.trust b{display:block;line-height:1.2}.trust small{color:var(--mute)}
+section{padding:78px 0}.alt{background:var(--soft)}
+.kicker{color:var(--gold);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;font-size:.78rem}
+.card-soft{border:1px solid #e6e8f0;border-radius:14px;background:#fff;height:100%;transition:.2s}
+.card-soft:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(22,33,62,.1)}
+.icon-box{width:48px;height:48px;border-radius:12px;background:#f3ecda;color:var(--gold);display:grid;place-items:center;font-size:1.4rem;margin-bottom:12px}
+.step-n{width:46px;height:46px;border-radius:50%;background:var(--navy);color:#fff;font:700 20px Georgia;display:grid;place-items:center;margin-bottom:12px}
+.shot{border:1px solid #dfe3ec;border-radius:12px;overflow:hidden;box-shadow:0 14px 34px rgba(22,33,62,.12);background:#fff}
+.shot img{width:100%;display:block}
+.dev{border:1px dashed #c8cee0;border-radius:14px;padding:18px;text-align:center;background:#fff;height:100%}
+.dev i{font-size:2.2rem;color:var(--navy)}
+.flow{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap}
+.flow .node{background:var(--navy);color:#fff;border-radius:12px;padding:14px 20px;text-align:center;min-width:150px}
+.flow .arrow{color:var(--gold);font-size:1.6rem}
+.cta{background:linear-gradient(160deg,#101a33,#16213e 60%,#1d2c57);color:#fff}.cta h2{color:#fff}
+.cta .form-control,.cta .form-select{background:#fff}
+.tick li{margin-bottom:.45rem;list-style:none;padding-left:1.7rem;position:relative}
+.tick li:before{content:"\F26A";font-family:"bootstrap-icons";position:absolute;left:0;color:var(--gold)}
+.price-card{border:2px solid var(--gold);border-radius:18px;background:#fff;position:relative}
+.price-card .tag{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:var(--gold);color:#fff;font-weight:700;border-radius:99px;padding:3px 16px;font-size:.8rem}
+.price{font:700 3rem/1 Georgia;color:var(--navy)}
+.accordion-button:not(.collapsed){background:#f3ecda;color:var(--navy)}
+footer.site{background:#0f1730;color:#b9c1d8;padding:54px 0 24px}footer.site a{color:#d7dcea;text-decoration:none}footer.site a:hover{color:#fff}
+footer.site h6{color:#fff}
+.demo-ribbon{background:#fff4d6;border-bottom:1px solid #e5c76b;color:#5c4400}
+
+.cookie{position:fixed;left:12px;right:12px;bottom:12px;z-index:3000;background:#16213e;color:#e5e9f5;border-radius:12px;padding:14px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;box-shadow:0 10px 30px rgba(0,0,0,.35);max-width:760px;margin:auto}
+.cookie a{color:#f1d594}.announce{background:#fff4d6;border-bottom:1px solid #e5c76b;color:#5c4400;text-align:center;padding:8px 12px;font-size:.92rem}
+.legal h2{font:700 1.15rem Georgia,serif;color:var(--navy);margin-top:1.6rem}.legal p{color:#344054}
+.svc-card{border:1px solid #e6e8f0;border-radius:14px;background:#fff;padding:22px;height:100%}
+@media(max-width:991px){.float-sheet{display:none}.hero{padding:70px 0 54px}section{padding:56px 0}}
+</style>
+
+<meta name="robots" content="noindex,nofollow">
+<style>
+body{background:#eef0f4}
+.a-top{background:var(--navy);color:#fff;position:sticky;top:0;z-index:50}
+.a-nav{display:flex;gap:4px;overflow-x:auto;padding:0 12px 8px}
+.a-nav .btn{white-space:nowrap;color:#d7dcea;border:0;border-radius:8px;padding:7px 14px}
+.a-nav .btn.on{background:#fff;color:var(--navy);font-weight:600}
+.a-nav .badge{margin-left:6px}
+.stat{background:#fff;border:1px solid #e1e5ee;border-radius:12px;padding:16px;height:100%}.stat b{display:block;font:700 28px Georgia,serif;color:var(--navy)}
+.panel{background:#fff;border:1px solid #e1e5ee;border-radius:12px;padding:16px;margin-bottom:16px}
+.table td,.table th{vertical-align:middle;font-size:.88rem}.table th{white-space:nowrap;background:#f6f7fb}
+.msgcell{max-width:280px;white-space:normal}
+.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:600;letter-spacing:.5px}
+.st{display:inline-block;border-radius:99px;padding:2px 10px;font-size:.75rem;font-weight:600;background:#e9ecf3;color:#445}
+.st.ok{background:#d6f1de;color:#146c2e}.st.warn{background:#fff0c9;color:#7a5a00}.st.bad{background:#fbdada;color:#8a1c1c}.st.info{background:#dbe8ff;color:#1b4a9c}
+.unread{background:#fffaf0;border-left:4px solid var(--gold)}
+</style></head>
+<body>
+<!-- LOGIN -->
+<div id="loginBox" class="min-vh-100 d-flex align-items-center justify-content-center p-3"><div class="card shadow border-0" style="max-width:380px;width:100%"><div class="card-body p-4">
+  <div class="d-flex align-items-center mb-3"><span class="brand-mark">OKV</span><div><b>OKV Technology</b><div class="small text-secondary">Admin dashboard</div></div></div>
+  <label class="form-label">Password</label><input type="password" class="form-control mb-2" id="pw" onkeydown="if(event.key==='Enter')login()">
+  <div class="alert alert-danger py-2 d-none" id="lerr"></div><button class="btn btn-navy w-100" id="lbtn" onclick="login()">Sign in</button>
+  <div class="text-center mt-3"><a class="small" href="">Back to website</a></div></div></div></div>
+
+<!-- APP -->
+<div id="app" class="d-none">
+  <div class="a-top"><div class="d-flex justify-content-between align-items-center px-3 py-2"><div class="d-flex align-items-center"><span class="brand-mark">OKV</span><b>OKV Technology Admin</b></div>
+    <div class="d-flex gap-2 align-items-center"><a class="btn btn-sm btn-outline-light" href="" target="_blank">Website</a><button class="btn btn-sm btn-outline-light" onclick="logout()">Sign out</button></div></div>
+    <div class="a-nav" id="anav"></div></div>
+  <main class="container-fluid p-3 p-lg-4" id="view" style="max-width:1400px"></main>
+</div>
+
+<!-- generic modal -->
+<div class="modal fade" id="gm" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title display-font" id="gmT"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="gmB"></div><div class="modal-footer" id="gmF"></div></div></div></div>
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:2000"><div id="toastBox" class="toast align-items-center text-bg-dark border-0"><div class="d-flex"><div class="toast-body" id="toastMsg"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+var BASE="", TOKEN='', S={view:'overview',page:1,q:'',status:'',sel:{},unread:0,known:null};
+function run(fn){var a=[].slice.call(arguments,1);return new Promise(function(res,rej){var r=google.script.run.withSuccessHandler(res).withFailureHandler(function(e){var m=String((e&&e.message)||e).replace(/^Error:\s*/,'');if(m==='SESSION_EXPIRED'){logout(true);rej(new Error(''));return}rej(new Error(m))});r[fn].apply(r,a)})}
+function A(fn){return run.apply(null,[fn,TOKEN].concat([].slice.call(arguments,1)))}
+function toast(m){document.getElementById('toastMsg').textContent=m;bootstrap.Toast.getOrCreateInstance(document.getElementById('toastBox'),{delay:4500}).show()}
+function fail(e){if(e&&e.message)toast(e.message)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function modal(title,body,foot){document.getElementById('gmT').textContent=title;document.getElementById('gmB').innerHTML=body;document.getElementById('gmF').innerHTML=foot||'<button class="btn btn-light" data-bs-dismiss="modal">Close</button>';bootstrap.Modal.getOrCreateInstance(document.getElementById('gm')).show()}
+function closeM(){bootstrap.Modal.getOrCreateInstance(document.getElementById('gm')).hide()}
+function v(id){return document.getElementById(id).value.trim()}
+function phone(p){var d=String(p||'').replace(/[^0-9]/g,'');if(d.indexOf('234')===0)return d;if(d.charAt(0)==='0')return '234'+d.slice(1);return d}
+function badge(s){var m={Pending:'warn',Approved:'ok',Rejected:'bad',Active:'ok','Code sent':'info','Pending activation':'warn',Trial:'info',Lead:'',New:'warn',Replied:'ok',Available:'ok',Sent:'info',Used:''};return '<span class="st '+(m[s]||'')+'">'+esc(s)+'</span>'}
+
+/* ---------- auth ---------- */
+function login(){var b=document.getElementById('lbtn'),e=document.getElementById('lerr');e.classList.add('d-none');b.disabled=true;
+  run('adminLogin',document.getElementById('pw').value).then(function(r){TOKEN=r.token;document.getElementById('loginBox').classList.add('d-none');document.getElementById('app').classList.remove('d-none');document.getElementById('pw').value='';go('overview');setInterval(poll,45000)})
+  .catch(function(x){e.textContent=x.message;e.classList.remove('d-none')}).finally(function(){b.disabled=false})}
+function logout(expired){TOKEN='';document.getElementById('app').classList.add('d-none');document.getElementById('loginBox').classList.remove('d-none');if(expired)toast('Your session ended. Please sign in again.')}
+function poll(){if(!TOKEN)return;A('adminOverview').then(function(o){if(S.known!==null&&o.unread>S.known)toast('New alert: '+(o.recentAlerts[0]?o.recentAlerts[0].Title:'check the dashboard'));S.known=o.unread;S.unread=o.unread;nav()}).catch(function(){})}
+
+/* ---------- navigation ---------- */
+var VIEWS=[['overview','Overview','bi-speedometer2'],['alerts','Alerts','bi-bell'],['activations','Activation requests','bi-key'],['payments','Payments','bi-credit-card'],['downloads','Downloads','bi-download'],['customers','Customers','bi-people'],['messages','Messages','bi-chat-dots'],['services','Installation requests','bi-tools'],['codes','Activation codes','bi-upc-scan'],['compose','Send messages','bi-send'],['installs','Trial installs','bi-pc-display'],['outbox','Sent log','bi-journal-text'],['integrations','Integrations','bi-plug'],['site','Pricing and site','bi-sliders'],['tools','Support tools','bi-life-preserver'],['settings','Settings','bi-gear']];
+function nav(){document.getElementById('anav').innerHTML=VIEWS.map(function(x){return '<button class="btn '+(S.view===x[0]?'on':'')+'" onclick="go(\''+x[0]+'\')"><i class="bi '+x[2]+' me-1"></i>'+x[1]+(x[0]==='alerts'&&S.unread?'<span class="badge text-bg-danger">'+S.unread+'</span>':'')+'</button>'}).join('')}
+function go(view,keep){S.view=view;if(!keep){S.page=1;S.q='';S.status=''}nav();document.getElementById('view').innerHTML='<div class="text-center p-5 text-secondary"><span class="spinner-border"></span></div>';R[view]().then(function(h){if(S.view===view)document.getElementById('view').innerHTML=h}).catch(function(e){fail(e);document.getElementById('view').innerHTML=''})}
+
+/* ---------- generic list ---------- */
+function toolbar(statuses,extra){return '<div class="d-flex flex-wrap gap-2 mb-3 align-items-center"><input class="form-control" style="max-width:260px" placeholder="Search..." value="'+esc(S.q)+'" onkeydown="if(event.key===\'Enter\'){S.q=this.value;S.page=1;go(S.view,true)}">'+(statuses?'<select class="form-select" style="max-width:200px" onchange="S.status=this.value;S.page=1;go(S.view,true)"><option value="">All statuses</option>'+statuses.map(function(s){return '<option '+(S.status===s?'selected':'')+'>'+s+'</option>'}).join('')+'</select>':'')+(extra||'')+'</div>'}
+function pager(r){var pages=Math.max(1,Math.ceil(r.total/r.size));return '<div class="d-flex justify-content-between align-items-center mt-2"><span class="small text-secondary">'+r.total+' record'+(r.total===1?'':'s')+'</span><div class="btn-group btn-group-sm"><button class="btn btn-outline-secondary" '+(r.page<=1?'disabled':'')+' onclick="S.page--;go(S.view,true)">Prev</button><button class="btn btn-outline-secondary disabled">'+r.page+' / '+pages+'</button><button class="btn btn-outline-secondary" '+(r.page>=pages?'disabled':'')+' onclick="S.page++;go(S.view,true)">Next</button></div></div>'}
+function tbl(heads,rows){return '<div class="table-responsive"><table class="table table-hover mb-0"><thead><tr>'+heads.map(function(h){return '<th>'+h+'</th>'}).join('')+'</tr></thead><tbody>'+(rows.length?rows.join(''):'<tr><td colspan="'+heads.length+'" class="text-center text-secondary py-4">Nothing here yet.</td></tr>')+'</tbody></table></div>'}
+function contactBtns(r){var n=phone(r.Phone),msg='Hello '+(r.Name||'')+', this is OKV Technology Consults.';return '<a class="btn btn-sm btn-outline-secondary" title="Email" onclick="composeTo(\''+esc(r.Email)+'\')"><i class="bi bi-envelope"></i></a> '+(n?'<a class="btn btn-sm btn-outline-success" title="WhatsApp" target="_blank" rel="noopener" href="https://wa.me/'+n+'?text='+encodeURIComponent(msg)+'" onclick="A(\'adminLogContact\',\'WhatsApp\',\''+esc(r.Email)+'\',\'WhatsApp chat\').catch(function(){})"><i class="bi bi-whatsapp"></i></a> <a class="btn btn-sm btn-outline-secondary" title="Call" href="tel:+'+n+'"><i class="bi bi-telephone"></i></a> <a class="btn btn-sm btn-outline-secondary" title="SMS" href="sms:+'+n+'?body='+encodeURIComponent(msg)+'"><i class="bi bi-chat-text"></i></a>':'')}
+var R={};
+function ib(icon,title,on,cls){return '<button class="btn btn-sm btn-outline-'+(cls||'secondary')+' me-1" title="'+title+'" aria-label="'+title+'" onclick="'+on+'"><i class="bi bi-'+icon+'"></i></button>'}
+var PAL=['#16213e','#b58a2c','#2f7d6d','#c4161c','#5b7db1','#8e6bbf','#d97a2b','#6b7280'];
+function shortN(n){n=+n||0;var a=Math.abs(n);return a>=1e6?(n/1e6).toFixed(1)+'M':a>=1e3?(n/1e3).toFixed(a>=1e4?0:1).replace(/\.0$/,'')+'k':Math.round(n*10)/10+''}
+function kpi(ic,v,l,c){return '<div class="col-6 col-md-4 col-xl-3"><div class="stat d-flex gap-3 align-items-center"><div style="width:42px;height:42px;border-radius:10px;background:'+c+'22;color:'+c+';display:grid;place-items:center;flex:none;font-size:1.2rem"><i class="bi '+ic+'"></i></div><div style="min-width:0"><b style="font-size:24px">'+v+'</b><span class="small text-secondary">'+l+'</span></div></div></div>'}
+function cBar(items,col){if(!items.length||items.every(function(i){return !i.v}))return '<div class="text-center text-secondary py-4">No data yet</div>';var W=420,H=170,l=34,t=12,b=34,max=Math.max.apply(null,items.map(function(i){return i.v}))*1.12||1,iw=W-l-8,ih=H-t-b,bw=iw/items.length,g='';for(var k=0;k<=4;k++){var y=t+ih-ih*k/4;g+='<line x1="'+l+'" x2="'+(W-8)+'" y1="'+y+'" y2="'+y+'" stroke="#e6e9f0"/><text x="'+(l-4)+'" y="'+(y+4)+'" font-size="10" fill="#667085" text-anchor="end">'+shortN(max*k/4)+'</text>'}items.forEach(function(it,i){var h=ih*it.v/max,x=l+i*bw+bw/2;g+='<rect x="'+(l+i*bw+bw*.18)+'" y="'+(t+ih-h)+'" width="'+bw*.64+'" height="'+h+'" rx="3" fill="'+(it.c||col||PAL[0])+'"><title>OKV Technology Admin</title></rect>';if(it.v)g+='<text x="'+x+'" y="'+(t+ih-h-3)+'" font-size="10" font-weight="600" text-anchor="middle">'+shortN(it.v)+'</text>';g+='<text x="'+x+'" y="'+(H-b+13)+'" font-size="9.5" fill="#667085" text-anchor="middle">'+esc(String(it.l).slice(0,9))+'</text>'});return '<svg viewBox="0 0 '+W+' '+H+'" width="100%">'+g+'</svg>'}
+function cLine(labels,vals,col){if(!vals.some(function(v){return v}))return '<div class="text-center text-secondary py-4">No data yet</div>';var W=420,H=170,l=34,t=12,b=26,max=Math.max.apply(null,vals)*1.12||1,iw=W-l-12,ih=H-t-b,st=labels.length>1?iw/(labels.length-1):0,g='',d='';for(var k=0;k<=4;k++){var y=t+ih-ih*k/4;g+='<line x1="'+l+'" x2="'+(W-12)+'" y1="'+y+'" y2="'+y+'" stroke="#e6e9f0"/><text x="'+(l-4)+'" y="'+(y+4)+'" font-size="10" fill="#667085" text-anchor="end">'+shortN(max*k/4)+'</text>'}vals.forEach(function(v,i){var x=l+i*st,y=t+ih-ih*v/max;d+=(d?'L':'M')+x.toFixed(1)+' '+y.toFixed(1);if(i%5===0||i===vals.length-1)g+='<text x="'+x+'" y="'+(H-b+14)+'" font-size="9.5" fill="#667085" text-anchor="middle">'+esc(labels[i])+'</text>'});return '<svg viewBox="0 0 '+W+' '+H+'" width="100%"><path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="2.4" stroke-linejoin="round"/>'+g+'</svg>'}
+function cDonut(obj,colors){var items=Object.keys(obj).map(function(k,i){return{l:k,v:obj[k],c:(colors&&colors[k])||PAL[i%PAL.length]}}).filter(function(i){return i.v>0}),tot=items.reduce(function(a,i){return a+i.v},0);if(!tot)return '<div class="text-center text-secondary py-4">No data yet</div>';var off=25,s='';items.forEach(function(it){var p=it.v/tot*100;s+='<circle cx="21" cy="21" r="15.9155" fill="none" stroke="'+it.c+'" stroke-width="6" stroke-dasharray="'+p+' '+(100-p)+'" stroke-dashoffset="'+off+'"><title>'+esc(it.l)+': '+it.v+'</title></circle>';off-=p});return '<div class="d-flex align-items-center gap-3 flex-wrap"><svg viewBox="0 0 42 42" style="width:130px;height:130px"><circle cx="21" cy="21" r="15.9155" fill="none" stroke="#eef1f8" stroke-width="6"/>'+s+'<text x="21" y="23" text-anchor="middle" font-size="7" font-weight="700" fill="#16213e">'+tot+'</text></svg><div class="small">'+items.map(function(i){return '<div><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:'+i.c+';margin-right:6px"></span>'+esc(i.l)+': <b>'+i.v+'</b></div>'}).join('')+'</div></div>'}
+function box(t,b){return '<div class="col-md-6 col-xl-4"><div class="panel h-100" style="margin:0"><h6 class="display-font">'+t+'</h6>'+b+'</div></div>'}
+
+function ib(icon,title,on,cls){return '<button class="btn btn-sm btn-outline-'+(cls||'secondary')+' me-1" title="'+title+'" aria-label="'+title+'" onclick="'+on+'"><i class="bi bi-'+icon+'"></i></button>'}
+var PAL=['#16213e','#b58a2c','#2f7d6d','#c4161c','#5b7db1','#8e6bbf','#d97a2b','#6b7280'];
+function shortN(n){n=+n||0;var a=Math.abs(n);return a>=1e6?(n/1e6).toFixed(1)+'M':a>=1e3?(n/1e3).toFixed(a>=1e4?0:1).replace(/\.0$/,'')+'k':Math.round(n*10)/10+''}
+function kpi(ic,v,l,c){return '<div class="col-6 col-md-4 col-xl-3"><div class="stat d-flex gap-3 align-items-center"><div style="width:42px;height:42px;border-radius:10px;background:'+c+'22;color:'+c+';display:grid;place-items:center;flex:none;font-size:1.2rem"><i class="bi '+ic+'"></i></div><div style="min-width:0"><b style="font-size:24px">'+v+'</b><span class="small text-secondary">'+l+'</span></div></div></div>'}
+function cBar(items,col){if(!items.length||items.every(function(i){return !i.v}))return '<div class="text-center text-secondary py-4">No data yet</div>';var W=420,H=170,l=34,t=12,b=34,max=Math.max.apply(null,items.map(function(i){return i.v}))*1.12||1,iw=W-l-8,ih=H-t-b,bw=iw/items.length,g='';for(var k=0;k<=4;k++){var y=t+ih-ih*k/4;g+='<line x1="'+l+'" x2="'+(W-8)+'" y1="'+y+'" y2="'+y+'" stroke="#e6e9f0"/><text x="'+(l-4)+'" y="'+(y+4)+'" font-size="10" fill="#667085" text-anchor="end">'+shortN(max*k/4)+'</text>'}items.forEach(function(it,i){var h=ih*it.v/max,x=l+i*bw+bw/2;g+='<rect x="'+(l+i*bw+bw*.18)+'" y="'+(t+ih-h)+'" width="'+bw*.64+'" height="'+h+'" rx="3" fill="'+(it.c||col||PAL[0])+'"><title>'+esc(it.l)+': '+it.v+'</title></rect>';if(it.v)g+='<text x="'+x+'" y="'+(t+ih-h-3)+'" font-size="10" font-weight="600" text-anchor="middle">'+shortN(it.v)+'</text>';g+='<text x="'+x+'" y="'+(H-b+13)+'" font-size="9.5" fill="#667085" text-anchor="middle">'+esc(String(it.l).slice(0,9))+'</text>'});return '<svg viewBox="0 0 '+W+' '+H+'" width="100%">'+g+'</svg>'}
+function cLine(labels,vals,col){if(!vals.some(function(v){return v}))return '<div class="text-center text-secondary py-4">No data yet</div>';var W=420,H=170,l=34,t=12,b=26,max=Math.max.apply(null,vals)*1.12||1,iw=W-l-12,ih=H-t-b,st=labels.length>1?iw/(labels.length-1):0,g='',d='';for(var k=0;k<=4;k++){var y=t+ih-ih*k/4;g+='<line x1="'+l+'" x2="'+(W-12)+'" y1="'+y+'" y2="'+y+'" stroke="#e6e9f0"/><text x="'+(l-4)+'" y="'+(y+4)+'" font-size="10" fill="#667085" text-anchor="end">'+shortN(max*k/4)+'</text>'}vals.forEach(function(v,i){var x=l+i*st,y=t+ih-ih*v/max;d+=(d?'L':'M')+x.toFixed(1)+' '+y.toFixed(1);if(i%5===0||i===vals.length-1)g+='<text x="'+x+'" y="'+(H-b+14)+'" font-size="9.5" fill="#667085" text-anchor="middle">'+esc(labels[i])+'</text>'});return '<svg viewBox="0 0 '+W+' '+H+'" width="100%"><path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="2.4" stroke-linejoin="round"/>'+g+'</svg>'}
+function cDonut(obj,colors){var items=Object.keys(obj).map(function(k,i){return{l:k,v:obj[k],c:(colors&&colors[k])||PAL[i%PAL.length]}}).filter(function(i){return i.v>0}),tot=items.reduce(function(a,i){return a+i.v},0);if(!tot)return '<div class="text-center text-secondary py-4">No data yet</div>';var off=25,s='';items.forEach(function(it){var p=it.v/tot*100;s+='<circle cx="21" cy="21" r="15.9155" fill="none" stroke="'+it.c+'" stroke-width="6" stroke-dasharray="'+p+' '+(100-p)+'" stroke-dashoffset="'+off+'"><title>'+esc(it.l)+': '+it.v+'</title></circle>';off-=p});return '<div class="d-flex align-items-center gap-3 flex-wrap"><svg viewBox="0 0 42 42" style="width:130px;height:130px"><circle cx="21" cy="21" r="15.9155" fill="none" stroke="#eef1f8" stroke-width="6"/>'+s+'<text x="21" y="23" text-anchor="middle" font-size="7" font-weight="700" fill="#16213e">'+tot+'</text></svg><div class="small">'+items.map(function(i){return '<div><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:'+i.c+';margin-right:6px"></span>'+esc(i.l)+': <b>'+i.v+'</b></div>'}).join('')+'</div></div>'}
+function box(t,b){return '<div class="col-md-6 col-xl-4"><div class="panel h-100" style="margin:0"><h6 class="display-font">'+t+'</h6>'+b+'</div></div>'}
+
+R.overview=async function(){
+  var o=await A('adminOverview'),c=await A('adminCharts');S.unread=o.unread;S.known=o.unread;nav();
+  var k=[kpi('bi-download',o.downloads,'Downloads','#16213e'),kpi('bi-pc-display',o.installs,'Trial installs registered','#5b7db1'),kpi('bi-people',o.customers,'Customers','#8e6bbf'),kpi('bi-hourglass-split',o.pending,'Activation requests waiting','#d97a2b'),kpi('bi-patch-check',o.active,'Active licences','#2f7d6d'),kpi('bi-bell',o.unread,'Unread alerts','#c4161c'),kpi('bi-upc-scan',o.codes.Available,'Codes ready (of '+o.totalCodes+')','#b58a2c'),kpi('bi-envelope',o.quota,'Emails left today','#16213e'),kpi('bi-cash-coin','&#8358;'+shortN(c.revenue),'Revenue recorded','#2f7d6d'),kpi('bi-tools',(c.services.New||0),'New installation requests','#8e6bbf'),kpi('bi-chat-dots',o.newMessages,'New messages','#c4161c'),kpi('bi-credit-card',(c.payments.Paid||0),'Paid payments','#5b7db1')];
+  var dl=c.downloadsByDay,rev=c.revenueByMonth;
+  return '<div class="panel d-flex flex-wrap gap-2 align-items-center"><b class="me-2"><i class="bi bi-upc-scan me-1"></i>Activation codes: '+o.codes.Available+' ready</b><button class="btn btn-outline-secondary btn-sm" onclick="gen(100)">Generate +100</button><button class="btn btn-outline-secondary btn-sm" onclick="gen(500)">+500</button><button class="btn btn-outline-secondary btn-sm" onclick="gen(1000)">+1000</button><div class="input-group input-group-sm" style="max-width:200px"><input type="number" class="form-control" id="gn0" placeholder="How many"><button class="btn btn-gold" onclick="gen(+document.getElementById(\'gn0\').value)">Generate</button></div>'+(o.pending?'<button class="btn btn-success btn-sm ms-auto" onclick="approveAll()"><i class="bi bi-check2-all me-1"></i>Approve all '+o.pending+' pending</button>':'')+'</div><div class="row g-3 mb-3">'+k.join('')+'</div><div class="row g-3 mb-3">'+box('Downloads, last 30 days',cLine(dl.map(function(x){return x.d.slice(5)}),dl.map(function(x){return x.n}),'#b58a2c'))+box('Customers by status',cDonut(c.customersByStatus))+box('Activation codes',cDonut(c.codes,{Available:'#2f7d6d',Sent:'#b58a2c',Used:'#16213e'}))+box('Revenue by month (&#8358;)',cBar(rev.map(function(x){return{l:x.m.slice(2),v:x.v}}),'#2f7d6d'))+box('Where customers come from',cBar(Object.keys(c.sources).map(function(k){return{l:k,v:c.sources[k]}})))+box('Alerts by type',cBar(Object.keys(c.alertsByType).map(function(k){return{l:k,v:c.alertsByType[k]}}),'#c4161c'))+'</div>'+
+  '<div class="row g-3"><div class="col-lg-6"><div class="panel"><h5 class="display-font">Waiting for a code</h5>'+tbl(['Request','School','Paid','Action'],o.pendingList.map(function(a){return '<tr><td>'+esc(a.ID)+'</td><td>'+esc(a.School)+'<div class="small text-secondary">'+esc(a.Email)+'</div></td><td>&#8358;'+esc(a.Amount)+'</td><td>'+'<button class="btn btn-sm btn-success me-1" title="Approve and email the activation code now" onclick="sendCodeModal(\''+a.ID+'\')"><i class="bi bi-check2-circle me-1"></i>Approve</button>'+'</td></tr>'}))+'</div></div><div class="col-lg-6"><div class="panel"><h5 class="display-font">Latest alerts</h5>'+tbl(['Time','Alert'],o.recentAlerts.map(function(a){return '<tr class="'+(a.Read!=='Yes'?'unread':'')+'"><td class="small">'+esc(a.Time)+'</td><td><b>'+esc(a.Title)+'</b></td></tr>'}))+'<div class="mt-2"><a href="#" onclick="go(\'alerts\');return false">All alerts</a></div></div></div></div>';
+};
+R.alerts=async function(){
+  var r=await A('adminTable','Alerts',{page:S.page,q:S.q,unread:S.status==='Unread'});
+  return '<div class="panel">'+toolbar(['Unread'],'<button class="btn btn-outline-secondary ms-auto" onclick="markAll()">Mark all read</button>')+tbl(['Time','Type','Alert','Details','Ref',''],r.rows.map(function(a){return '<tr class="'+(a.Read!=='Yes'?'unread':'')+'"><td class="small">'+esc(a.Time)+'</td><td>'+badge(a.Type==='Activation request'?'Pending':a.Type==='Activated'?'Active':'Trial')+' '+esc(a.Type)+'</td><td><b>'+esc(a.Title)+'</b></td><td class="msgcell small">'+esc(a.Detail).replace(/\n/g,'<br>')+'</td><td>'+esc(a.Ref)+'</td><td>'+(a.Read!=='Yes'?ib('check2','Mark read','markOne(\''+a.ID+'\')'):'')+'</td></tr>'}))+pager(r)+'</div>';
+};
+function markAll(){A('adminMarkAlerts','all').then(function(){go('alerts',true)}).catch(fail)}
+function markOne(id){A('adminMarkAlerts',[id]).then(function(){go('alerts',true)}).catch(fail)}
+R.activations=async function(){
+  var r=await A('adminTable','Activations',{page:S.page,q:S.q,status:S.status});
+  return '<div class="panel">'+toolbar(['Pending','Approved','Rejected'],'<button class="btn btn-gold ms-auto" onclick="approveAll()"><i class="bi bi-check2-all me-1"></i>Approve all pending</button>')+tbl(['Request','Time','School','Contact','Paid','Reference','Installation ID','Receipt','Status','Code',''],r.rows.map(function(a){return '<tr><td><b>'+esc(a.ID)+'</b></td><td class="small">'+esc(a.Time)+'</td><td>'+esc(a.School)+'<div class="small text-secondary">'+esc(a.Name)+'</div></td><td class="small">'+esc(a.Email)+'<br>'+esc(a.Phone)+'</td><td>&#8358;'+esc(a.Amount)+'<div class="small text-secondary">'+esc(a.PaidOn)+'</div></td><td class="small">'+esc(a.Bank)+'<br>'+esc(a.Reference)+'</td><td class="small code">'+esc(a.InstallationID)+'</td><td>'+(/^https/.test(a.ReceiptURL)?'<a target="_blank" rel="noopener" href="'+esc(a.ReceiptURL)+'">Open</a>':esc(a.ReceiptURL))+'</td><td>'+badge(a.Status)+'</td><td class="code small">'+esc(a.CodeSent)+'</td><td style="white-space:nowrap">'+(a.Status==='Pending'?'<button class="btn btn-sm btn-success me-1" title="Approve and email the activation code now" onclick="sendCodeModal(\''+a.ID+'\')"><i class="bi bi-check2-circle me-1"></i>Approve</button>'+ib('x-circle','Reject request','rejectModal(\''+a.ID+'\')','danger'):'')+' '+contactBtns(a)+'</td></tr>'}))+pager(r)+'</div>';
+};
+function sendCodeModal(id){modal('Approve and send activation code','<p>The next available code will be emailed to the customer <b>immediately</b>, and the request will be marked <b>Approved</b>.</p><p class="small text-secondary">Request '+esc(id)+'. Check the receipt before sending.</p>','<button class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button class="btn btn-gold" id="scb" onclick="doSend(\''+id+'\')"><i class="bi bi-check2-circle me-1"></i>Approve and send code</button>')}
+function doSend(id){var b=document.getElementById('scb');b.disabled=true;A('adminSendCode',{requestId:id}).then(function(r){closeM();toast('Code '+r.code+' emailed to '+r.to);go(S.view,true)}).catch(function(e){b.disabled=false;fail(e)})}
+function rejectModal(id){modal('Reject request '+id,'<label class="form-label">Reason (emailed to the customer)</label><textarea class="form-control" id="rr" rows="3">We could not confirm the payment from the receipt. Please send a clearer receipt.</textarea>','<button class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button class="btn btn-danger" onclick="doReject(\''+id+'\')">Reject and email</button>')}
+function doReject(id){A('adminRejectActivation',id,v('rr')).then(function(){closeM();toast('Request rejected');go(S.view,true)}).catch(fail)}
+R.downloads=async function(){
+  var r=await A('adminTable','Downloads',{page:S.page,q:S.q});
+  return '<div class="panel">'+toolbar(null)+tbl(['Time','Name','School','Email','Phone','Location','Role','Pupils','Heard from',''],r.rows.map(function(d){return '<tr><td class="small">'+esc(d.Time)+'</td><td>'+esc(d.Name)+'</td><td>'+esc(d.School)+'</td><td class="small">'+esc(d.Email)+'</td><td>'+esc(d.Phone)+'</td><td>'+esc(d.Location)+'</td><td class="small">'+esc(d.Role)+'</td><td>'+esc(d.Pupils)+'</td><td class="small">'+esc(d.HeardFrom)+'</td><td style="white-space:nowrap">'+contactBtns(d)+'</td></tr>'}))+pager(r)+'</div>';
+};
+R.installs=async function(){
+  var r=await A('adminTable','Installs',{page:S.page,q:S.q});
+  return '<div class="panel"><p class="small text-secondary">Schools that registered their trial from inside the dashboard.</p>'+toolbar(null)+tbl(['Time','Installation ID','School','Name','Email','Phone','Address',''],r.rows.map(function(d){return '<tr><td class="small">'+esc(d.Time)+'</td><td class="code small">'+esc(d.InstallationID)+'</td><td>'+esc(d.School)+'</td><td>'+esc(d.Name)+'</td><td class="small">'+esc(d.Email)+'</td><td>'+esc(d.Phone)+'</td><td class="small">'+esc(d.Address)+'</td><td style="white-space:nowrap">'+contactBtns(d)+'</td></tr>'}))+pager(r)+'</div>';
+};
+R.messages=async function(){
+  var r=await A('adminTable','Messages',{page:S.page,q:S.q,status:S.status});
+  return '<div class="panel">'+toolbar(['New','Replied'])+tbl(['ID','Time','From','Message','Source','Status',''],r.rows.map(function(m){return '<tr><td>'+esc(m.ID)+'</td><td class="small">'+esc(m.Time)+'</td><td><b>'+esc(m.Name)+'</b><div class="small text-secondary">'+esc(m.School)+'<br>'+esc(m.Email)+'<br>'+esc(m.Phone)+'</div></td><td class="msgcell">'+esc(m.Message)+'</td><td class="small">'+esc(m.Type)+'<div class="code">'+esc(m.InstallationID)+'</div></td><td>'+badge(m.Status)+'</td><td style="white-space:nowrap">'+contactBtns(m)+(m.Status==='New'?ib('check2-circle','Mark replied','msgDone(\''+m.ID+'\')','success'):'')+'</td></tr>'}))+pager(r)+'</div>';
+};
+function msgDone(id){A('adminSetMessageStatus',id,'Replied').then(function(){go('messages',true)}).catch(fail)}
+R.outbox=async function(){
+  var r=await A('adminTable','Outbox',{page:S.page,q:S.q});
+  return '<div class="panel">'+toolbar(null)+tbl(['Time','Channel','To','Subject','Message','By','Result'],r.rows.map(function(o){return '<tr><td class="small">'+esc(o.Time)+'</td><td>'+esc(o.Channel)+'</td><td class="small">'+esc(o.To)+'</td><td class="small">'+esc(o.Subject)+'</td><td class="msgcell small">'+esc(o.Message)+'</td><td>'+esc(o.By)+'</td><td>'+(o.Result==='Sent'||o.Result==='Opened'?badge('Approved').replace('Approved',esc(o.Result)):'<span class="st bad">'+esc(o.Result)+'</span>')+'</td></tr>'}))+pager(r)+'</div>';
+};
+R.customers=async function(){
+  var r=await A('adminTable','Customers',{page:S.page,q:S.q,status:S.status});
+  return '<div class="panel">'+toolbar(['Lead','Trial','Pending activation','Code sent','Active'],'<button class="btn btn-gold ms-auto" onclick="composeSel()"><i class="bi bi-send me-1"></i>Message selected</button>')+tbl(['','ID','Name','School','Contact','Location','Status','Source','Licensed','Notes',''],r.rows.map(function(c){return '<tr><td><input type="checkbox" class="form-check-input" '+(S.sel[c.ID]?'checked':'')+' onchange="selC(\''+c.ID+'\',this.checked,\''+esc(c.Email)+'\')"></td><td>'+esc(c.ID)+'</td><td>'+esc(c.Name)+'</td><td>'+esc(c.School)+'</td><td class="small">'+esc(c.Email)+'<br>'+esc(c.Phone)+'</td><td class="small">'+esc(c.Location)+'</td><td>'+badge(c.Status)+'</td><td class="small">'+esc(c.Source)+'</td><td class="small">'+esc(c.LicensedOn)+'</td><td class="msgcell small">'+esc(c.Notes)+'</td><td style="white-space:nowrap">'+contactBtns(c)+' <button class="btn btn-sm btn-outline-secondary" onclick=\'editCust('+JSON.stringify(c).replace(/'/g,'&#39;')+')\'>Edit</button></td></tr>'}))+pager(r)+'</div>';
+};
+function selC(id,on,email){if(on)S.sel[id]=email;else delete S.sel[id]}
+function editCust(c){modal('Edit customer '+c.ID,'<div class="row g-2"><div class="col-md-6"><label class="form-label">Name</label><input class="form-control" id="e_Name" value="'+esc(c.Name)+'"></div><div class="col-md-6"><label class="form-label">School</label><input class="form-control" id="e_School" value="'+esc(c.School)+'"></div><div class="col-md-6"><label class="form-label">Email</label><input class="form-control" id="e_Email" value="'+esc(c.Email)+'"></div><div class="col-md-6"><label class="form-label">Phone</label><input class="form-control" id="e_Phone" value="'+esc(c.Phone)+'"></div><div class="col-md-6"><label class="form-label">Location</label><input class="form-control" id="e_Location" value="'+esc(c.Location)+'"></div><div class="col-md-6"><label class="form-label">Status</label><select class="form-select" id="e_Status">'+['Lead','Trial','Pending activation','Code sent','Active'].map(function(s){return '<option '+(c.Status===s?'selected':'')+'>'+s+'</option>'}).join('')+'</select></div><div class="col-12"><label class="form-label">Notes</label><textarea class="form-control" id="e_Notes" rows="3">'+esc(c.Notes)+'</textarea></div></div>',
+ '<button class="btn btn-outline-danger me-auto" onclick="delCust(\''+c.ID+'\')">Delete</button><button class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button class="btn btn-navy" onclick="saveCust(\''+c.ID+'\')">Save</button>')}
+function saveCust(id){var f={};['Name','School','Email','Phone','Location','Status','Notes'].forEach(function(k){f[k]=v('e_'+k)});A('adminUpdateCustomer',id,f).then(function(){closeM();toast('Saved');go('customers',true)}).catch(fail)}
+function delCust(id){if(!confirm('Delete this customer record?'))return;A('adminDeleteCustomer',id).then(function(){closeM();go('customers',true)}).catch(fail)}
+
+R.codes=async function(){
+  var o=await A('adminOverview'),r=await A('adminTable','Codes',{page:S.page,q:S.q,status:S.status,size:50});
+  return '<div class="row g-3 mb-3"><div class="col-6 col-md-3"><div class="stat"><b>'+o.codes.Available+'</b>Ready to send</div></div><div class="col-6 col-md-3"><div class="stat"><b>'+o.codes.Sent+'</b>Sent, not yet used</div></div><div class="col-6 col-md-3"><div class="stat"><b>'+o.codes.Used+'</b>Used</div></div><div class="col-6 col-md-3"><div class="stat"><b>'+o.totalCodes+'</b>Total codes</div></div></div>'+
+  '<div class="panel"><h5 class="display-font">Send a code directly</h5><p class="small text-secondary">Emails the next available code to the customer at once. Use this for payments confirmed outside the form.</p><div class="row g-2"><div class="col-md-3"><input class="form-control" id="k_name" placeholder="Customer name"></div><div class="col-md-3"><input class="form-control" id="k_school" placeholder="School name"></div><div class="col-md-4"><input class="form-control" id="k_email" placeholder="Email address"></div><div class="col-md-2"><button class="btn btn-gold w-100" onclick="directSend()">Send code</button></div></div></div>'+
+  '<div class="panel">'+toolbar(['Available','Sent','Used'],'<div class="ms-auto btn-group"><button class="btn btn-outline-secondary" onclick="gen(100)">+100 codes</button><button class="btn btn-outline-secondary" onclick="gen(500)">+500</button><button class="btn btn-outline-secondary" onclick="gen(1000)">+1000</button></div><div class="input-group" style="max-width:210px"><input type="number" min="1" max="2000" class="form-control" id="gn" placeholder="How many"><button class="btn btn-gold" onclick="gen(+document.getElementById(\'gn\').value)">Generate</button></div>')+tbl(['Code','Status','Assigned to','Sent','Used','Installation ID','Licensee','Batch',''],r.rows.map(function(c){return '<tr><td class="code">'+esc(c.Code)+'</td><td>'+badge(c.Status)+'</td><td class="small">'+esc(c.AssignedTo)+'<div class="text-secondary">'+esc(c.AssignedName)+'</div></td><td class="small">'+esc(c.SentOn)+'</td><td class="small">'+esc(c.UsedOn)+'</td><td class="code small">'+esc(c.InstallationID)+'</td><td class="small">'+esc(c.Licensee)+'</td><td class="small">'+esc(c.Batch)+'</td><td style="white-space:nowrap">'+ib('clipboard','Copy code','copyCode(\''+c.Code+'\')')+(c.Status==='Available'?ib('send','Send this code','sendThis(\''+c.Code+'\')','warning'):ib('arrow-counterclockwise','Reset code','resetCode(\''+c.Code+'\')','danger'))+'</td></tr>'}))+pager(r)+'</div>';
+};
+function directSend(){A('adminSendCode',{email:v('k_email'),name:v('k_name'),school:v('k_school')}).then(function(r){toast('Code '+r.code+' emailed to '+r.to);go('codes',true)}).catch(fail)}
+function gen(n){if(!(n>0)){toast('Enter how many codes to generate.');return}A('adminGenerateCodes',n).then(function(r){toast(r.made+' new codes added');go(S.view,true)}).catch(fail)}
+function copyCode(c){if(navigator.clipboard)navigator.clipboard.writeText(c).then(function(){toast('Copied '+c)});else toast(c)}
+function resetCode(c){if(!confirm('Return '+c+' to the available pool? Use this only when a school reinstalls and needs to activate again.'))return;A('adminResetCode',c).then(function(){toast('Code reset');go('codes',true)}).catch(fail)}
+function sendThis(c){modal('Send code '+c,'<div class="row g-2"><div class="col-md-6"><input class="form-control" id="s_name" placeholder="Customer name"></div><div class="col-md-6"><input class="form-control" id="s_school" placeholder="School name"></div><div class="col-12"><input class="form-control" id="s_email" placeholder="Email address"></div></div>','<button class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button class="btn btn-gold" onclick="doSendThis(\''+c+'\')">Send code now</button>')}
+function doSendThis(c){A('adminSendCode',{code:c,email:v('s_email'),name:v('s_name'),school:v('s_school')}).then(function(r){closeM();toast('Code emailed to '+r.to);go('codes',true)}).catch(fail)}
+
+/* ---------- compose ---------- */
+var TPL={follow:['Your free trial of the School Result and Accounting System','Hello {name},\n\nThank you for downloading the School Result and Accounting Management System for {school}. How is the trial going? If you need help setting up classes, scores or fees, reply to this email or WhatsApp us.\n\nOKV Technology Consults'],
+ ending:['Your 12-day trial is ending soon','Hello {name},\n\nYour free trial for {school} is almost over. To keep working without interruption, pay once and request your activation code from Admin > License on your dashboard. Your data stays safe.\n\nOKV Technology Consults'],
+ paid:['We received your payment','Hello {name},\n\nThank you. We have received your payment for {school} and your activation code is on its way.\n\nOKV Technology Consults'],blank:['','']};
+var COMP={mode:'status',list:[]};
+function composeTo(email){S.sel={};S.pre=email;go('compose')}
+function composeSel(){if(!Object.keys(S.sel).length){toast('Tick one or more customers first.');return}S.pre='';go('compose')}
+R.compose=async function(){
+  var sel=Object.keys(S.sel).length?'<option value="selected">Customers I ticked ('+Object.keys(S.sel).length+')</option>':'';
+  return '<div class="panel"><div class="row g-3"><div class="col-lg-4"><label class="form-label">Who receives it</label><select class="form-select mb-2" id="m_who" onchange="whoChange()">'+sel+'<option value="">All customers</option><option>Lead</option><option>Trial</option><option>Pending activation</option><option>Code sent</option><option>Active</option><option value="custom">Email addresses I type</option></select><textarea class="form-control d-none" id="m_custom" rows="3" placeholder="one@email.com, two@email.com"></textarea><div class="small text-secondary mt-2" id="m_count"></div>'+
+  '<label class="form-label mt-3">Template</label><select class="form-select" id="m_tpl" onchange="tplPick()"><option value="blank">Blank</option><option value="follow">Follow up after download</option><option value="ending">Trial ending</option><option value="paid">Payment received</option></select></div>'+
+  '<div class="col-lg-8"><label class="form-label">Subject</label><input class="form-control mb-2" id="m_sub"><label class="form-label">Message <span class="text-secondary small">({name} and {school} are filled in for each person)</span></label><textarea class="form-control" id="m_body" rows="9"></textarea>'+
+  '<div class="d-flex flex-wrap gap-2 mt-3"><button class="btn btn-gold" onclick="sendEmails()"><i class="bi bi-envelope me-1"></i>Send email now</button><button class="btn btn-success" onclick="links(\'wa\')"><i class="bi bi-whatsapp me-1"></i>WhatsApp links</button><button class="btn btn-outline-secondary" onclick="links(\'sms\')"><i class="bi bi-chat-text me-1"></i>SMS links</button><button class="btn btn-outline-primary" onclick="sendSms()"><i class="bi bi-phone me-1"></i>Send SMS now (Termii)</button><button class="btn btn-outline-secondary" onclick="links(\'tel\')"><i class="bi bi-telephone me-1"></i>Call list</button></div><div class="small text-secondary mt-2">Email is sent directly from here. WhatsApp, SMS and calls open on your phone or WhatsApp Web, one customer at a time.</div></div></div></div><div id="m_out"></div>';
+};
+async function recips(){
+  var w=v('m_who'),all=await A('adminRecipients','');
+  if(w==='custom')return v('m_custom').split(/[\s,;]+/).filter(Boolean).map(function(e){return{Email:e,Name:'',School:'',Phone:''}});
+  if(w==='selected')return all.filter(function(c){return S.sel[c.ID]});
+  return all.filter(function(c){return !w||c.Status===w});
+}
+function whoChange(){document.getElementById('m_custom').classList.toggle('d-none',v('m_who')!=='custom');recips().then(function(l){document.getElementById('m_count').textContent=l.length+' recipient'+(l.length===1?'':'s')}).catch(fail)}
+function tplPick(){var t=TPL[v('m_tpl')];document.getElementById('m_sub').value=t[0];document.getElementById('m_body').value=t[1]}
+setTimeout(function(){},0);
+async function sendEmails(){var l=await recips();if(!l.length){toast('No recipients selected.');return}if(!v('m_sub')||!v('m_body')){toast('Enter a subject and message.');return}if(!confirm('Send this email to '+l.length+' recipient(s)?'))return;
+  try{var r=await A('adminSendMessage',{subject:v('m_sub'),body:document.getElementById('m_body').value,recipients:l});document.getElementById('m_out').innerHTML='<div class="alert alert-success">Sent: '+r.sent+'. Failed: '+r.failed+'. Emails left today: '+r.remaining+'.</div>'}catch(e){fail(e)}}
+async function sendSms(){var l=await recips();if(!l.length){toast('No recipients selected.');return}var body=document.getElementById('m_body').value;if(!body.trim()){toast('Write the message text first.');return}if(!confirm('Send this as an SMS to '+l.length+' recipient(s)?'))return;try{var r=await A('adminSendSms',{body:body,recipients:l});document.getElementById('m_out').innerHTML='<div class="alert alert-success">SMS sent: '+r.sent+'. Failed or no phone: '+r.failed+'.</div>'}catch(e){fail(e)}}
+async function links(kind){var l=await recips();if(!l.length){toast('No recipients selected.');return}var body=document.getElementById('m_body').value;
+  var rows=l.filter(function(c){return phone(c.Phone)}).map(function(c){var m=body.replace(/\{name\}/gi,c.Name||'there').replace(/\{school\}/gi,c.School||'your school'),n=phone(c.Phone);var href=kind==='wa'?'https://wa.me/'+n+'?text='+encodeURIComponent(m):kind==='sms'?'sms:+'+n+'?body='+encodeURIComponent(m):'tel:+'+n;
+    return '<tr><td>'+esc(c.Name||c.Email)+'</td><td>'+esc(c.School)+'</td><td>+'+n+'</td><td><a class="btn btn-sm '+(kind==='wa'?'btn-success':'btn-outline-secondary')+'" target="_blank" rel="noopener" href="'+href+'" onclick="A(\'adminLogContact\',\''+(kind==='wa'?'WhatsApp':kind==='sms'?'SMS':'Call')+'\',\''+esc(c.Email)+'\',\'Opened from dashboard\').catch(function(){})">Open</a></td></tr>'});
+  document.getElementById('m_out').innerHTML='<div class="panel">'+(rows.length?tbl(['Name','School','Phone',''],rows):'<div class="text-secondary">None of the selected customers has a phone number.</div>')+'</div>'}
+
+/* ---------- payments ---------- */
+R.payments=async function(){
+  var r=await A('adminTable','Payments',{page:S.page,q:S.q,status:S.status});
+  return '<div class="panel">'+toolbar(['Paid','Initialized','Failed','Abandoned','Underpaid'],'<div class="ms-auto d-flex gap-2"><button class="btn btn-outline-secondary" onclick="verifyAll()"><i class="bi bi-arrow-repeat me-1"></i>Verify Paystack payments</button><button class="btn btn-gold" onclick="manualPay()"><i class="bi bi-plus-lg me-1"></i>Record manual payment</button></div>')+
+   tbl(['Reference','Time','School','Payer','Amount','Gateway','Status','Code','Actions'],r.rows.map(function(p){return '<tr><td class="code small">'+esc(p.Reference)+'</td><td class="small">'+esc(p.Time)+'</td><td>'+esc(p.School)+'</td><td class="small">'+esc(p.Name)+'<br>'+esc(p.Email)+'</td><td>&#8358;'+esc(p.Amount)+'</td><td>'+esc(p.Gateway)+'</td><td>'+(p.Status==='Paid'?'<span class="st ok">Paid</span>':p.Status==='Initialized'?'<span class="st warn">Waiting</span>':'<span class="st bad">'+esc(p.Status)+'</span>')+'</td><td class="code small">'+esc(p.CodeSent)+'</td><td style="white-space:nowrap">'+(p.Gateway==='Paystack'&&p.Status!=='Paid'?ib('arrow-repeat','Verify with Paystack','verifyAll()'):'')+(p.Status==='Paid'&&!p.CodeSent?ib('send','Send activation code','codeFor(\''+esc(p.Email)+'\',\''+esc(p.Name).replace(/'/g,'')+'\',\''+esc(p.School).replace(/'/g,'')+'\')','warning'):'')+contactBtns(p)+'</td></tr>'}))+pager(r)+'</div>';
+};
+function verifyAll(){A('adminVerifyPayments').then(function(r){toast('Checked '+r.checked+', newly paid '+r.paid);go('payments',true)}).catch(fail)}
+function codeFor(email,name,school){A('adminSendCode',{email:email,name:name,school:school}).then(function(r){toast('Code '+r.code+' emailed to '+r.to);go('payments',true)}).catch(fail)}
+function manualPay(){modal('Record a manual payment','<p class="small text-secondary">For bank transfers you confirmed yourself. It appears in revenue; use Send code afterwards.</p><div class="row g-2"><div class="col-md-6"><input class="form-control" id="mp_school" placeholder="School name"></div><div class="col-md-6"><input class="form-control" id="mp_name" placeholder="Payer name"></div><div class="col-md-6"><input class="form-control" id="mp_email" placeholder="Email"></div><div class="col-md-6"><input class="form-control" id="mp_phone" placeholder="Phone"></div><div class="col-md-6"><input type="number" class="form-control" id="mp_amount" placeholder="Amount (&#8358;)"></div><div class="col-md-6"><select class="form-select" id="mp_method"><option>Transfer</option><option>Cash</option><option>POS</option></select></div></div>','<button class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button class="btn btn-gold" onclick="saveManual()">Save payment</button>')}
+function saveManual(){A('adminRecordManualPayment',{school:v('mp_school'),name:v('mp_name'),email:v('mp_email'),phone:v('mp_phone'),amount:v('mp_amount'),method:v('mp_method')}).then(function(){closeM();toast('Payment recorded');go('payments',true)}).catch(fail)}
+function approveAll(){if(!confirm('Approve every pending request and email each customer a code now?'))return;A('adminApproveAll').then(function(r){toast('Approved '+r.sent+', skipped '+r.failed);go('activations',true)}).catch(fail)}
+
+/* ---------- installation requests ---------- */
+R.services=async function(){
+  var r=await A('adminTable','Services',{page:S.page,q:S.q,status:S.status}),opts=['New','Quoted','Scheduled','Done','Cancelled'];
+  return '<div class="panel"><p class="small text-secondary">Schools asking OKV to install and set up the software.</p>'+toolbar(opts)+tbl(['Ref','Time','School','Contact','Where','How / when','Details','Status','Actions'],r.rows.map(function(m){return '<tr><td>'+esc(m.ID)+'</td><td class="small">'+esc(m.Time)+'</td><td>'+esc(m.School)+'<div class="small text-secondary">'+esc(m.Name)+'</div></td><td class="small">'+esc(m.Email)+'<br>'+esc(m.Phone)+'</td><td>'+esc(m.Location)+'</td><td class="small">'+esc(m.Type)+'<br>'+esc(m.PreferredDate)+'</td><td class="msgcell small">'+esc(m.Details)+'</td><td><select class="form-select form-select-sm" onchange="svcStatus(\''+m.ID+'\',this.value)">'+opts.map(function(s){return '<option '+(m.Status===s?'selected':'')+'>'+s+'</option>'}).join('')+'</select></td><td style="white-space:nowrap">'+contactBtns(m)+'</td></tr>'}))+pager(r)+'</div>';
+};
+function svcStatus(id,s){A('adminSetServiceStatus',id,s).then(function(){toast('Updated')}).catch(fail)}
+
+/* ---------- integrations ---------- */
+function secretField(k,label,s,ph){return '<div class="col-md-6"><label class="form-label">'+label+(s.secrets[k]?' <span class="st ok">saved</span> <a href="#" onclick="clearSecret(\''+k+'\');return false" class="small text-danger">remove</a>':'')+'</label><input type="password" class="form-control" id="s_'+k+'" placeholder="'+(s.secrets[k]?'Leave empty to keep the saved value':ph||'')+'" autocomplete="new-password"></div>'}
+function textField(k,label,s,ph,col){return '<div class="col-md-'+(col||6)+'"><label class="form-label">'+label+'</label><input class="form-control" id="s_'+k+'" value="'+esc(s[k])+'" placeholder="'+(ph||'')+'"></div>'}
+function areaField(k,label,s,rows){return '<div class="col-12"><label class="form-label">'+label+'</label><textarea class="form-control" id="s_'+k+'" rows="'+(rows||2)+'">'+esc(s[k])+'</textarea></div>'}
+function sw(k,label,s){return '<div class="col-md-6"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="s_'+k+'" '+(s[k]==='1'?'checked':'')+'><label class="form-check-label" for="s_'+k+'">'+label+'</label></div></div>'}
+R.integrations=async function(){
+  var s=await A('adminGetSettings');
+  return '<div class="panel"><div class="d-flex justify-content-between align-items-start flex-wrap gap-2"><div><h5 class="display-font mb-0"><i class="bi bi-credit-card me-2"></i>Paystack (online payments)</h5><div class="small text-secondary">Customers pay on the Pricing page. Each payment is verified with Paystack before a code is sent.</div></div><button class="btn btn-outline-secondary btn-sm" onclick="testInt(\'paystack\')">Test connection</button></div><div class="row g-3 mt-1">'+textField('PAYSTACK_PUBLIC','Public key (pk_live_... or pk_test_...)',s,'pk_live_xxx')+secretField('PAYSTACK_SECRET','Secret key (sk_live_... or sk_test_...)',s,'sk_live_xxx')+sw('PAYSTACK_ENABLED','Enable Paystack on the website',s)+sw('PAYSTACK_AUTO_CODE','Email the activation code automatically after a verified payment',s)+'</div> <div class="alert alert-info small mt-3 mb-0">Set <code>'+esc(s.url)+'?page=paid</code> as the <b>Callback URL</b> in your Paystack dashboard. Google Apps Script cannot receive Paystack webhooks, so confirmation happens when the customer returns and when you press <b>Verify Paystack payments</b>.</div></div> <div class="panel"><div class="d-flex justify-content-between flex-wrap gap-2"><div><h5 class="display-font mb-0"><i class="bi bi-telegram me-2"></i>Telegram alerts</h5><div class="small text-secondary">Every alert is also sent to your Telegram chat.</div></div><button class="btn btn-outline-secondary btn-sm" onclick="testInt(\'telegram\')">Send test</button></div><div class="row g-3 mt-1">'+secretField('TELEGRAM_TOKEN','Bot token (from @BotFather)',s,'123456:ABC...')+textField('TELEGRAM_CHAT','Chat ID',s,'e.g. 123456789')+'</div></div> <div class="panel"><div class="d-flex justify-content-between flex-wrap gap-2"><div><h5 class="display-font mb-0"><i class="bi bi-diagram-3 me-2"></i>Webhook (Zapier, Make, n8n, Slack, your own API)</h5><div class="small text-secondary">We POST JSON {title, detail, time, source} on every alert.</div></div><button class="btn btn-outline-secondary btn-sm" onclick="testInt(\'webhook\')">Send test</button></div><div class="row g-3 mt-1">'+secretField('WEBHOOK_URL','Webhook URL',s,'https://hooks.example.com/...')+'</div></div> <div class="panel"><div class="d-flex justify-content-between flex-wrap gap-2"><div><h5 class="display-font mb-0"><i class="bi bi-chat-text me-2"></i>SMS (Termii)</h5><div class="small text-secondary">Send SMS to customers from Send messages. Needs your own Termii account and approved sender ID.</div></div><button class="btn btn-outline-secondary btn-sm" onclick="testInt(\'sms\')">Check key</button></div><div class="row g-3 mt-1">'+secretField('TERMII_KEY','Termii API key',s,'TLxxxx')+textField('TERMII_SENDER','Sender ID',s,'OKV')+'</div></div> <button class="btn btn-navy" onclick="saveIntegrations()">Save integrations</button><div class="small text-secondary mt-2">Keys are stored in Apps Script properties and are never shown again after saving.</div>';
+};
+var INT_TEXT=['PAYSTACK_PUBLIC','TELEGRAM_CHAT','TERMII_SENDER'],INT_SEC=['PAYSTACK_SECRET','TELEGRAM_TOKEN','WEBHOOK_URL','TERMII_KEY'],INT_SW=['PAYSTACK_ENABLED','PAYSTACK_AUTO_CODE'];
+function saveIntegrations(){var f={};INT_TEXT.forEach(function(k){f[k]=v('s_'+k)});INT_SEC.forEach(function(k){f[k]=document.getElementById('s_'+k).value});INT_SW.forEach(function(k){f[k]=document.getElementById('s_'+k).checked?'1':'0'});A('adminSaveSettings',f).then(function(){toast('Integrations saved');go('integrations',true)}).catch(fail)}
+function clearSecret(k){if(!confirm('Remove the saved value?'))return;A('adminSaveSettings',{clear:[k]}).then(function(){go('integrations',true)}).catch(fail)}
+function testInt(w){var p=w==='paystack'?A('adminTestPaystack'):A('adminTestIntegration',w);p.then(function(r){toast(w==='paystack'?'Paystack connected ('+r.mode+')':'Test sent'+(r.note?': '+r.note:''))}).catch(fail)}
+
+/* ---------- site, pricing and payment methods ---------- */
+R.site=async function(){
+  var s=await A('adminGetSettings');
+  return '<div class="panel"><h5 class="display-font">Pricing shown on the website and in the software</h5><div class="row g-3">'+textField('PRICE','Licence price (&#8358;, numbers only)',s)+textField('OLD_PRICE','Old price to cross out (optional)',s,'e.g. 150000')+textField('PROMO_TEXT','Promo text (optional)',s,'e.g. Launch offer until 31 December')+textField('INSTALL_NOTE','Installation service note / price',s,'Quoted on request')+'</div></div> <div class="panel"><h5 class="display-font">Download files (Google Drive file IDs)</h5><p class="small text-secondary">Upload each ZIP to Google Drive, share it as Anyone with the link, and paste the ID from the link. The Windows and Mac buttons across the site use these.</p><div class="row g-3">'+textField('DOWNLOAD_WIN_ID','Windows ZIP file ID (SchoolSystemSetup.exe)',s)+textField('DOWNLOAD_MAC_ID','Mac file ID (.dmg or ZIP)',s)+textField('DOWNLOAD_FILE_ID','Fallback file ID (used if one above is empty)',s)+'</div></div> <div class="panel"><h5 class="display-font">Payment methods</h5><div class="row g-3">'+sw('MANUAL_ENABLED','Accept manual bank transfer (shows bank details and the receipt form)',s)+sw('PAYSTACK_ENABLED','Accept Paystack online payment (set keys under Integrations)',s)+sw('AUTO_APPROVE','Auto-approve: email the activation code the moment a receipt is submitted',s)+'</div> <p class="small text-secondary mt-2 mb-2">Bank details for manual payments</p><div class="row g-3">'+textField('BANK_NAME','Bank name',s)+textField('ACCOUNT_NAME','Account name',s)+textField('ACCOUNT_NUMBER','Account number',s)+'</div> <div class="alert alert-warning small mt-3 mb-0">Auto-approve sends codes without you checking the receipt. Leave it off unless you trust the payment flow, and prefer Paystack verification, which cannot be faked.</div></div> <div class="panel"><h5 class="display-font">Landing page content</h5><div class="row g-3">'+areaField('HERO_TITLE','Main headline (empty uses the default)',s,2)+areaField('HERO_TEXT','Sub-headline',s,3)+areaField('ANNOUNCEMENT','Announcement banner shown on every page (empty hides it)',s,2)+'</div></div> <div class="panel"><h5 class="display-font">Website controls</h5><div class="row g-3">'+sw('MAINTENANCE','Maintenance mode (pauses all forms)',s)+sw('DOWNLOADS_ENABLED','Download form on',s)+sw('ACTIVATION_ENABLED','Activation and online payment forms on',s)+'</div></div> <div class="panel"><h5 class="display-font">Download package</h5><div class="row g-3">'+textField('DOWNLOAD_FILE_ID','Google Drive file ID of the installer ZIP (Share: anyone with the link)',s,'',8)+'<div class="col-md-4 d-flex align-items-end">'+(s.downloadLink?'<a class="btn btn-outline-secondary" target="_blank" rel="noopener" href="'+esc(s.downloadLink)+'">Test download link</a>':'<span class="st warn">not set</span>')+'</div></div></div> <button class="btn btn-navy" onclick="saveSite()">Save changes</button>';
+};
+function saveSite(){var f={};['PRICE','OLD_PRICE','PROMO_TEXT','INSTALL_NOTE','BANK_NAME','ACCOUNT_NAME','ACCOUNT_NUMBER','HERO_TITLE','HERO_TEXT','ANNOUNCEMENT','DOWNLOAD_FILE_ID','DOWNLOAD_WIN_ID','DOWNLOAD_MAC_ID'].forEach(function(k){f[k]=v('s_'+k)});['MANUAL_ENABLED','PAYSTACK_ENABLED','AUTO_APPROVE','MAINTENANCE','DOWNLOADS_ENABLED','ACTIVATION_ENABLED'].forEach(function(k){f[k]=document.getElementById('s_'+k).checked?'1':'0'});A('adminSaveSettings',f).then(function(){toast('Saved. The website is updated.');go('site',true)}).catch(fail)}
+
+/* ---------- support tools ---------- */
+R.tools=async function(){
+  return '<div class="panel"><h5 class="display-font"><i class="bi bi-key me-2"></i>Administrator password reset code</h5><p class="small text-secondary">A school administrator who lost both the password and the recovery key sends you the Installation ID shown on the Forgot password window. Verify who they are first, then create a code. It works once, only on that installation, and expires in about 24 hours.</p><div class="row g-2" style="max-width:720px"><div class="col-md-5"><input class="form-control" id="t_iid" placeholder="XXXX-XXXX-XXXX-XXXX"></div><div class="col-md-5"><input class="form-control" id="t_email" placeholder="Email it to (optional)"></div><div class="col-md-2"><button class="btn btn-gold w-100" onclick="mkReset()">Create</button></div></div><div id="t_out" class="mt-3"></div></div> <div class="panel"><h5 class="display-font"><i class="bi bi-upc-scan me-2"></i>Re-activate after a reinstall</h5><p class="small text-secondary mb-0">Open Activation codes, find the school\'s code and press the reset icon. The code returns to the pool and can be sent again.</p></div>';
+};
+function mkReset(){A('adminResetToken',v('t_iid'),v('t_email')).then(function(r){document.getElementById('t_out').innerHTML='<div class="alert alert-success">Valid until '+esc(r.expires)+(r.emailed?'. Emailed.':'.')+'</div><textarea class="form-control code" id="t_code" rows="5" readonly onclick="this.select()">'+esc(r.code)+'</textarea><button class="btn btn-outline-secondary mt-2" onclick="copyCode(document.getElementById(\'t_code\').value)">Copy code</button>'}).catch(fail)}
+
+/* ---------- settings ---------- */
+R.settings=async function(){
+  var s=await A('adminGetSettings');
+  return '<div class="panel"><h5 class="display-font">Business</h5><div class="row g-3 mt-1">'+textField('OWNER_EMAIL','Email that receives alerts',s)+textField('SUPPORT_EMAIL','Support email shown to customers',s)+textField('WHATSAPP','WhatsApp number',s)+textField('SITE_NAME','Business name',s)+textField('WEBSITE','Website',s)+'</div><button class="btn btn-navy mt-3" onclick="saveBiz()">Save</button></div> <div class="panel"><h5 class="display-font">Status</h5><ul class="mb-0"><li>Signing key: '+(s.keySet?'<span class="st ok">set</span>':'<span class="st bad">missing, activation will fail</span>')+'</li><li>Download link: '+(s.downloadLink?'<a target="_blank" rel="noopener" href="'+esc(s.downloadLink)+'">test it</a>':'<span class="st warn">not set</span>')+'</li><li>Web app address (the installer\'s <code>config.json</code> <code>endpoint</code>):<br><code>'+esc(s.url)+'</code></li></ul></div> <div class="panel"><h5 class="display-font">Change dashboard password</h5><div class="row g-2" style="max-width:520px"><div class="col-6"><input type="password" class="form-control" id="pw_old" placeholder="Current password"></div><div class="col-6"><input type="password" class="form-control" id="pw_new" placeholder="New password (8+ characters)"></div></div><button class="btn btn-outline-dark mt-2" onclick="chPw()">Change password</button></div>';
+};
+function saveBiz(){var f={};['OWNER_EMAIL','SUPPORT_EMAIL','WHATSAPP','SITE_NAME','WEBSITE'].forEach(function(k){f[k]=v('s_'+k)});A('adminSaveSettings',f).then(function(){toast('Saved')}).catch(fail)}
+function chPw(){A('adminChangePassword',v('pw_old'),v('pw_new')).then(function(){toast('Password changed');document.getElementById('pw_old').value='';document.getElementById('pw_new').value=''}).catch(fail)}
+</script>
+</body></html>
